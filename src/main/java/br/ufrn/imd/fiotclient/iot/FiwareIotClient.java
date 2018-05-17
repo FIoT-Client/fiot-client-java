@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.ini4j.InvalidFileFormatException;
 import org.json.JSONObject;
 
@@ -348,9 +351,13 @@ public class FiwareIotClient extends SimpleClient {
 			System.out.print("Sending payload: ");
 			System.out.println(payload);
 
-			//TODO publish
-//			publish.single(topic, payload=payload, hostname=self.mosquitto_host, port=self.mosquitto_port);
-			resultJSON.put("result", "OK");
+			try {
+				this.publishMQTTMessage(topic, payload);
+				resultJSON.put("result", "OK");
+			} catch (MqttException e) {
+				resultJSON.put("result", "ERROR");
+				resultJSON.put("error", e.getMessage());
+			}
 		} else if (protocol.equals("HTTP")) {
 			System.out.println("Transport protocol: UL-HTTP");
 			String url = String.format("http://%s:%s/iot/d?k=%s&i=%s", this.idasHost, this.idasUL20Port, this.apiKey, deviceId);
@@ -369,6 +376,18 @@ public class FiwareIotClient extends SimpleClient {
 		return resultJSON.toString();
 	}
 	
+	public void publishMQTTMessage(String topic, String payload) throws MqttException {
+		MqttClient client = new MqttClient(String.format("tcp://%s:%s", this.mosquittoHost, this.mosquittoPort), MqttClient.generateClientId());
+		client.connect();
+
+		MqttMessage message = new MqttMessage();
+		message.setPayload(payload.getBytes());
+
+		client.publish(topic, message);
+		client.disconnectForcibly();
+		client.close(true);
+	}
+
 	/*
 	 * Sends measurement group attributes from a device to the FIWARE platform
 	 * 
