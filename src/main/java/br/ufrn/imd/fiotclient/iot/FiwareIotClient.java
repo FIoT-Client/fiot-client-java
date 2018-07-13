@@ -1,29 +1,23 @@
 package br.ufrn.imd.fiotclient.iot;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.ini4j.InvalidFileFormatException;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import br.ufrn.imd.fiotclient.SimpleClient;
 import br.ufrn.imd.fiotclient.utils.ConfigParser;
 
 //import logging
-//
-//import paho.mqtt.publish as publish
-//
-//from fiotclient import utils
-//from . import SimpleClient
-//
+
 //__copyright__ = "Copyright 2017, Lucas Cristiano Calixto Dantas"
 //__credits__ = ["Lucas Cristiano Calixto Dantas"]
 //__license__ = "MIT"
@@ -152,20 +146,23 @@ public class FiwareIotClient extends SimpleClient {
 	 *                       This parameter is not valid when Fiware-ServicePath is '/\*' or '/#'.
 	 * @return               The response of the removal request
 	 */
-	public void removeService(String service, String servicePath, String apiKey, boolean removeDevices) {
+	public String removeService(String service, String servicePath, String apiKey, boolean removeDevices) {
 		// logging.info("Removing service")
-		//
-		// url = "http://{}:{}/iot/services?resource={}&apikey={}".format(self.idas_host, self.idas_admin_port, '/iot/d', api_key)
-		//
-		// if service_path != '/*' and service_path != '/#':
-		// remove_devices_str = 'true' if remove_devices else 'false'
-		// url += '&device={}'.format(remove_devices_str)
-		//
-		// additional_headers = {'Fiware-Service': service,
-		// 'Fiware-ServicePath': service_path}
-		// payload = ''
-		//
-		// return self._send_request(url, payload, 'DELETE', additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/iot/services?resource=%s&apikey=%s", idasHost, idasAdminPort, "/iot/d", apiKey);
+
+        if (!servicePath.equals("/*") && !servicePath.equals("/#")) {
+            String removeDevicesStr = removeDevices? "true" : "false";
+            url = url + String.format("&device=%s", removeDevicesStr);
+        }
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Fiware-Service", service);
+        additionalHeaders.put("Fiware-ServicePath", servicePath);
+
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.DELETE, additionalHeaders);
 	}
 
 	/*
@@ -187,29 +184,30 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param protocol      The protocol to be used on device. If no value is provided the default protocol (IoTA-UL) will be used
 	 * @return              Information of the registered device
 	 */
-	public void registerDevice(String deviceSchema, String deviceId, String entityId, String endpoint,
-			String protocol) {
+	public String registerDevice(String deviceSchema, String deviceId, String entityId, String endpoint, String protocol) throws JSONException {
 		// logging.info("Registering device")
-		//
-		// url = "http://{}:{}/iot/devices?protocol={}".format(self.idas_host,
-		// self.idas_admin_port, protocol)
-		//
-		// additional_headers = {'Content-Type': 'application/json'}
-		//
-		// device_schema = device_schema.replace('[DEVICE_ID]', str(device_id)) \
-		// .replace('[ENTITY_ID]', str(entity_id))
-		//
-		// if '"endpoint"' in device_schema:
-		// endpoint_split = endpoint.split(':')
-		// device_ip = endpoint_split[0]
-		// device_port = endpoint_split[1]
-		// device_schema = device_schema.replace('[DEVICE_IP]', str(device_ip)) \
-		// .replace('[PORT]', str(device_port))
-		//
-		// payload = json.loads(device_schema)
-		//
-		// return self._send_request(url, payload, 'POST',
-		// additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/iot/devices?protocol=%s", idasHost, idasAdminPort, protocol);
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Content-Type", "application/json");
+
+        //Tests if file content is a valid JSON (or throws JSONException)
+        new JSONObject(deviceSchema);
+
+		String deviceSchemaReplaced = deviceSchema.replace("[DEVICE_ID]", deviceId)
+                                                  .replace("[ENTITY_ID]", entityId);
+
+        if (deviceSchemaReplaced.contains("\"endpoint\"")) {
+            String[] endpointSplit = endpoint.split(":");
+            String deviceIp = endpointSplit[0];
+            String devicePort = endpointSplit[1];
+
+            deviceSchemaReplaced = deviceSchemaReplaced.replace("[DEVICE_IP]", deviceIp)
+                                                       .replace("[PORT]", devicePort);
+        }
+
+        return this.sendRequest(url, deviceSchemaReplaced, SimpleClient.POST, additionalHeaders);
 	}
 
 	/*
@@ -222,16 +220,16 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param protocol        The protocol to be used on device. If no value is provided the default protocol (IoTA-UL) will be used
 	 * @return                Information of the registered device
 	 */
-	public void registerDeviceFromFile(String deviceFilePath, String deviceId, String entityId, String endpoint,
-			String protocol) {
+	public String registerDeviceFromFile(String deviceFilePath, String deviceId, String entityId, String endpoint, String protocol) throws IOException, JSONException {
 		// logging.info("Opening file '{}'".format(device_file_path))
-		//
-		// with open(device_file_path) as json_device_file:
-		// payload = json.load(json_device_file)
-		//
-		// device_schema_json_str = json.dumps(payload)
-		// return self.register_device(device_schema_json_str, device_id, entity_id,
-		// endpoint=endpoint, protocol=protocol)
+
+        byte[] jsonDeviceFileBytes = Files.readAllBytes(Paths.get(deviceFilePath));
+        String deviceSchemaJsonStr = new String(jsonDeviceFileBytes, Charset.defaultCharset());
+
+        //Tests if file content is a valid JSON (or throws JSONException)
+        new JSONObject(deviceSchemaJsonStr);
+
+        return this.registerDevice(deviceSchemaJsonStr, deviceId, entityId, endpoint, protocol);
 	}
 
 	/*
@@ -254,14 +252,13 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param deviceId  The id to the device to be removed
 	 * @return          Response of the removal request
 	 */
-	public void removeDevice(String deviceId) {
-		// url = "http://{}:{}/iot/devices/{}".format(self.idas_host,
-		// self.idas_admin_port, device_id)
-		// additional_headers = {'Content-Type': 'application/json'}
-		// payload = ''
-		//
-		// return self._send_request(url, payload, 'DELETE',
-		// additional_headers=additional_headers)
+	public String removeDevice(String deviceId) {
+		String url = String.format("http://%s:%s/iot/devices/%s", idasHost, idasAdminPort, deviceId);
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Content-Type", "application/json");
+		String payload = "";
+
+		return this.sendRequest(url, payload, SimpleClient.DELETE, additionalHeaders);
 	}
 
 	/*
@@ -279,15 +276,15 @@ public class FiwareIotClient extends SimpleClient {
 	 * 
 	 * @return  The list of devices registered in the service
 	 */
-	public void listDevices() {
+	public String listDevices() {
 		// logging.info("Listing devices")
-		//
-		// url = "http://{}:{}/iot/devices".format(self.idas_host, self.idas_admin_port)
-		// additional_headers = {'Content-Type': 'application/json'}
-		// payload = ''
-		//
-		// return self._send_request(url, payload, 'GET',
-		// additional_headers=additional_headers)
+
+		String url = String.format("http://%s:%s/iot/devices", idasHost, idasAdminPort);
+		Map<String, String> additionalHeaders = new HashMap<>();
+		additionalHeaders.put("Content-Type", "application/json");
+		String payload = "";
+
+		return this.sendRequest(url, payload, SimpleClient.GET, additionalHeaders);
 	}
 
 	/*
@@ -296,7 +293,7 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param groupMeasurements  A dict representing a group of measurements, where the keys are the attribute names and the values are the measurements values for each attribute
 	 * @return                   A string representing the measurement group
 	 */
-	protected static String joinGroupMeasurements(Map<String, String> measurementGroup) {
+	private static String joinGroupMeasurements(Map<String, String> measurementGroup) {
 		List<String> payloads = new ArrayList<>();
 		measurementGroup.forEach((k, v) -> payloads.add(String.format("%s|%s", k, v)));
 		return String.join("|", payloads);
@@ -319,7 +316,7 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param measurements  A list of measurement groups obtained in the device
 	 * @return              A string containing the UL payload
 	 */
-	protected static String createULPayloadFromMeasurementGroupList(List<Map<String, String>> measurementGroups) {
+	private static String createULPayloadFromMeasurementGroupList(List<Map<String, String>> measurementGroups) {
 		//Multiple measurement groups list
 		List<String> groupsPayload = new ArrayList<>();
 		measurementGroups.forEach(g -> groupsPayload.add(FiwareIotClient.joinGroupMeasurements(g)));
@@ -339,44 +336,50 @@ public class FiwareIotClient extends SimpleClient {
 	public String sendObservation(String deviceId, List<Map<String, String>> measurementGroups, String protocol) {
 		System.out.println("Sending observation");
 
-		String payload = FiwareIotClient.createULPayloadFromMeasurementGroupList(measurementGroups);
+		String payload = createULPayloadFromMeasurementGroupList(measurementGroups);
 		
 		JSONObject resultJSON = new JSONObject();
-		
-		if (protocol.equals("MQTT")) {
-			System.out.println("Transport protocol: MQTT");
-			String topic = String.format("/%s/%s/attrs", this.apiKey, deviceId);
 
-			System.out.println(String.format("Publishing to %s on topic %s", this.idasHost, topic));
-			System.out.print("Sending payload: ");
-			System.out.println(payload);
+        switch (protocol) {
+            case "MQTT":
+                System.out.println("Transport protocol: MQTT");
+                String topic = String.format("/%s/%s/attrs", this.apiKey, deviceId);
 
-			try {
-				this.publishMQTTMessage(topic, payload);
-				resultJSON.put("result", "OK");
-			} catch (MqttException e) {
-				resultJSON.put("result", "ERROR");
-				resultJSON.put("error", e.getMessage());
-			}
-		} else if (protocol.equals("HTTP")) {
-			System.out.println("Transport protocol: UL-HTTP");
-			String url = String.format("http://%s:%s/iot/d?k=%s&i=%s", this.idasHost, this.idasUL20Port, this.apiKey, deviceId);
-			
-			Map<String, String> additional_headers = new HashMap<>();
-			additional_headers.put("Content-Type", "text/plain");
-			
-			this.sendRequest(url, payload, SimpleClient.POST, additional_headers);
-			resultJSON.put("result", "OK");
-		} else {
-			 System.out.println(String.format("Unknown transport protocol '{}'", protocol));
-			 String errorMsg = "Unknown transport protocol. Accepted values are 'MQTT' and 'HTTP'";
-			 resultJSON.put("error", errorMsg);
-		}
+                System.out.println(String.format("Publishing to %s on topic %s", this.idasHost, topic));
+                System.out.print("Sending payload: ");
+                System.out.println(payload);
+
+                try {
+                    this.publishMQTTMessage(topic, payload);
+                    resultJSON.put("result", "OK");
+                } catch (MqttException e) {
+                    resultJSON.put("result", "ERROR");
+                    resultJSON.put("error", e.getMessage());
+                }
+                break;
+
+            case "HTTP":
+                System.out.println("Transport protocol: UL-HTTP");
+                String url = String.format("http://%s:%s/iot/d?k=%s&i=%s", this.idasHost, this.idasUL20Port, this.apiKey, deviceId);
+
+                Map<String, String> additional_headers = new HashMap<>();
+                additional_headers.put("Content-Type", "text/plain");
+
+                this.sendRequest(url, payload, SimpleClient.POST, additional_headers);
+                resultJSON.put("result", "OK");
+                break;
+
+            default:
+                System.out.println(String.format("Unknown transport protocol '{}'", protocol));
+                String errorMsg = "Unknown transport protocol. Accepted values are 'MQTT' and 'HTTP'";
+                resultJSON.put("error", errorMsg);
+                break;
+        }
 		
 		return resultJSON.toString();
 	}
 	
-	public void publishMQTTMessage(String topic, String payload) throws MqttException {
+	private void publishMQTTMessage(String topic, String payload) throws MqttException {
 		MqttClient client = new MqttClient(String.format("tcp://%s:%s", this.mosquittoHost, this.mosquittoPort), MqttClient.generateClientId());
 		client.connect();
 
@@ -398,7 +401,7 @@ public class FiwareIotClient extends SimpleClient {
 	 * @return              The summary of the sent measurements
 	 */
 	public String sendObservation(String deviceId, Map<String, String> measurements, String protocol) {
-		return this.sendObservation(deviceId, Arrays.asList(measurements), protocol);
+		return this.sendObservation(deviceId, Collections.singletonList(measurements), protocol);
 	}
 
 	/*
@@ -410,12 +413,12 @@ public class FiwareIotClient extends SimpleClient {
 	 * @param params    The command parameters to be sent
 	 * @return          The result of the command call
 	 */
-	public String sendCommand(String entityId, String deviceId, String command, ArrayList<String> params) {
+	public String sendCommand(String entityId, String deviceId, String command, List<String> params) {
 		if(params == null) {
 	    		params = new ArrayList<String>();
 	    }
 	
-	    String url = String.format("http://%s:%d/v1/updateContext", this.idasHost, this.idasAdminPort);
+	    String url = String.format("http://%s:%s/v1/updateContext", this.idasHost, this.idasAdminPort);
 	
 	    Map<String, String> additionalHeaders = new HashMap<>();
 	    additionalHeaders.put("Content-Type", "application/json");
@@ -448,24 +451,33 @@ public class FiwareIotClient extends SimpleClient {
 	}
 
 	/*
-	 * Get a list of polling commands of the device with the given id when sending a measurement group or a list of measurement groups to the FIWARE platform from a device with POST request
+	 * Get a list of polling commands of the device with the given id when sending a list of measurement groups to the FIWARE platform from a device with POST request
 	 * 
 	 * @param deviceId      The id of the device to verify pooling commands
 	 * @param measurements  A measurement group (a dict where keys are device attributes and values are measurements for each attribute) or a list of measurement groups obtained in the device
 	 * @return              The list of pooling commands of the device
 	 */
-	public void getPollingCommands(String deviceId, String measurements) {
+	public String getPollingCommands(String deviceId, List<Map<String, String>> measurementGroups) {
 		// logging.info("Sending measurement and getting pooling commands")
-		//
-		// url = "http://{}:{}/iot/d?k={}&i={}&getCmd=1".format(self.idas_host,
-		// self.idas_ul20_port, self.api_key,
-		// device_id)
-		// payload = self._create_ul_payload_from_measurements(measurements)
-		// additional_headers = {'Content-Type': 'text/plain'}
-		//
-		// return self._send_request(url, payload, 'POST',
-		// additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/iot/d?k=%s&i=%s&getCmd=1", idasHost, idasUL20Port, apiKey, deviceId);
+        String payload = createULPayloadFromMeasurementGroupList(measurementGroups);
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Content-Type", "text/plain");
+
+        return this.sendRequest(url, payload, SimpleClient.POST, additionalHeaders);
 	}
+
+    /*
+     * Get a list of polling commands of the device with the given id when sending a measurement group to the FIWARE platform from a device with POST request
+     *
+     * @param deviceId      The id of the device to verify pooling commands
+     * @param measurements  A measurement group (a map where keys are device attributes and values are measurements for each attribute)
+     * @return              The list of pooling commands of the device
+     */
+    public String getPollingCommands(String deviceId, Map<String, String> measurements) {
+        return this.getPollingCommands(deviceId, Collections.singletonList(measurements));
+    }
 
 	public String getIdasHost() {
 		return idasHost;

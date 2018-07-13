@@ -1,12 +1,16 @@
 package br.ufrn.imd.fiotclient.context;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.ini4j.InvalidFileFormatException;
 
 import br.ufrn.imd.fiotclient.SimpleClient;
 import br.ufrn.imd.fiotclient.utils.ConfigParser;
+import org.json.JSONObject;
 
 //import logging
 
@@ -93,7 +97,7 @@ public class FiwareContextClient extends SimpleClient {
      * @return          The information of the entity found with the given id or None if no entity was found with the id
      */
     public String getEntityById(String entityId) {
-        System.out.println(String.format("Getting entity by id '%s'", entityId));
+//        logging.info("Getting entity by id '{}'".format(entity_id))
         
         //TODO Remove hardcoded type from url
         String url = String.format("http://%s:%s/v2/entities/%s/attrs?type=thing", this.getCbHost(), this.getCbPort(), entityId);
@@ -110,13 +114,13 @@ public class FiwareContextClient extends SimpleClient {
      * @param entityType  The type of the entities to be searched
      * @return            A list with the information of the entities found with the given type
      */
-    public void getEntitiesByType(String entityType) {
+    public String getEntitiesByType(String entityType) {
 //        logging.info("Getting entities by type '{}'".format(type))
-//
-//        url = "http://{}:{}/v2/entities?type={}".format(self.cb_host, self.cb_port, entity_type)
-//        payload = ''
-//
-//        return self._send_request(url, payload, 'GET')
+
+        String url = String.format("http://%s:%s/v2/entities?type=%s", getCbHost(), getCbPort(), entityType);
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.GET);
     }
 
     /*
@@ -127,30 +131,42 @@ public class FiwareContextClient extends SimpleClient {
      * @param notificationUrl  The URL to which the notification will be sent on changes
      * @return                 The information of the subscription
      */
-    public void subscribeAttributesChange(String deviceId, String attributes, String notificationUrl) {
+    public String subscribeAttributesChange(String deviceId, List<String> attributes, String notificationUrl) {
 //        logging.info("Subscribing for change on attributes '{}' on device with id '{}'".format(attributes, device_id))
-//
-//        url = "http://{}:{}/v1/subscribeContext".format(self.cb_host, self.cb_port)
-//
-//        additional_headers = {'Accept': 'application/json',
-//                              'Content-Type': 'application/json'}
-//
-//        payload = {"entities": [{
-//            "type": "thing",
-//            "isPattern": "false",
-//            "id": str(device_id)
-//        }],
-//            "attributes": attributes,
-//            "notifyConditions": [{
-//                "type": "ONCHANGE",
-//                "condValues": attributes
-//            }],
-//            "reference": notification_url,
-//            "duration": "P1Y",
-//            "throttling": "PT1S"
-//        }
-//
-//        return self._send_request(url, payload, 'POST', additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/v1/subscribeContext", this.getCbHost(), this.getCbPort());
+
+        HashMap<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Accept", "application/json");
+        additionalHeaders.put("Content-Type", "application/json");
+
+        String attributesStr = attributes.stream()
+                .map(s -> "\"" + s + "\"")
+                .collect(Collectors.joining(","));
+        attributesStr = String.format("[%s]", attributesStr);
+
+        String payload = String.format(
+        		            "{" +
+                                "\"entities\": [" +
+                                    "{" +
+                                        "\"type\": \"thing\"," +
+                                        "\"isPattern\": \"false\"," +
+                                        "\"id\": \"%s\"" +
+                                    "}" +
+                                "]," +
+                                "\"attributes\": \"%s\"," +
+                                "\"notifyConditions\": [" +
+                                    "{" +
+              	                        "\"type\": \"ONCHANGE\"," +
+                                        "\"condValues\": \"%s\"" +
+                                    "}" +
+                                "]," +
+                                "\"reference\": \"%s\"," +
+                                "\"duration\": \"P1Y\"," +
+                                "\"throttling\": \"PT1S\"" +
+                            "}", deviceId, attributesStr, attributesStr, notificationUrl);
+
+        return this.sendRequest(url, payload, SimpleClient.POST, additionalHeaders);
     }
 
     /*
@@ -164,42 +180,62 @@ public class FiwareContextClient extends SimpleClient {
      * @param notificationUrl  The endpoint to which POST notifications will be sent
      * @return                 The information of the created rule
      */
-    public void subscribeAttributeChangeWithRule(String attribute, String attributeType, String condition, String action, String notificationUrl) {
+    public String subscribeAttributeChangeWithRule(String attribute, String attributeType, String condition, String action, String notificationUrl) {
 //        logging.info("Creating attribute change rule")
-//
-//        url = "http://{}:{}/rules".format(self.perseo_host, self.perseo_port)
-//
-//        additional_headers = {'Accept': 'application/json',
-//                              'Content-Type': 'application/json'}
-//
-//        rule_template = "select *,\"{}-rule\" as ruleName from pattern " \
-//                        "[every ev=iotEvent(cast(cast(ev.{}?,String),{}){})]"
-//        payload = {
-//            "name": "{}-rule".format(attribute),
-//            "text": rule_template.format(attribute, attribute, attribute_type, condition),
-//            "action": {
-//                "type": "",
-//                "template": "Alert! {0} is now ${{ev.{1}}}.".format(attribute, attribute),
-//                "parameters": {}
-//            }
-//        }
-//
-//        if action == 'email':
-//            payload["action"]["type"] = "email"
-//            # TODO Remove hardcoded info
-//            payload["action"]["parameters"] = {"to": "{}".format("lucascristiano27@gmail.com"),
-//                                               "from": "{}".format("lucas.calixto.dantas@gmail.com"),
-//                                               "subject": "Alert! High {} Detected".format(attribute.capitalize())}
-//        elif action == 'post':
-//            payload["action"]["type"] = "post"
-//            payload["action"]["parameters"] = {"url": "{}".format(notification_url)}
-//
-//        else:
-//            error_msg = "Unknown action '{}'".format(action)
+
+        String url = String.format("http://%s:%s/rules", perseoHost, perseoPort);
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Content-Type", "application/json");
+        additionalHeaders.put("Accept", "application/json");
+
+        String ruleTemplate = "select *,\"%s-rule\" as ruleName from pattern " +
+                        "[every ev=iotEvent(cast(cast(ev.%s?,String),%s)%s)]";
+
+        String payload = String.format(
+                            "{" +
+                                "\"name\": \"%s-rule\"," +
+                                "\"text\": " + ruleTemplate + "," +
+                                "\"action\": {" +
+                                    "\"type\": \"\"," +
+                                    "\"template\": " + String.format("Alert! %s is now ${{ev.%s}}.", attribute, attribute) + "," +
+                                    "\"parameters\": {}" +
+                                "}" +
+                            "}", attribute, attribute, attribute, attributeType, condition);
+
+        JSONObject payloadObject = new JSONObject(payload);
+
+        switch (action) {
+            case "email": {
+                payloadObject = payloadObject.getJSONObject("action").put("type", "email");
+
+                //TODO Remove hardcoded info
+                JSONObject parametersObject = new JSONObject();
+                parametersObject.put("to", "lucascristiano27@gmail.com");
+                parametersObject.put("from", "lucas.calixto.dantas@gmail.com");
+                parametersObject.put("subject", String.format("Alert! High %s Detected", attribute.toUpperCase()));
+                payloadObject = payloadObject.getJSONObject("action").put("parameters", parametersObject);
+
+                break;
+            }
+
+            case "post": {
+                payloadObject = payloadObject.getJSONObject("action").put("type", "post");
+
+                //TODO Remove hardcoded info
+                JSONObject parametersObject = new JSONObject();
+                parametersObject.put("url", notificationUrl);
+                payloadObject = payloadObject.getJSONObject("action").put("parameters", parametersObject);
+                break;
+            }
+
+            default:
+                String errorMsg = String.format("Unknown action '%s'", action);
 //            logging.error(error_msg)
-//            return {'error': error_msg}
-//
-//        return self._send_request(url, payload, 'POST', additional_headers=additional_headers)
+                return String.format("{'error': '%s'}", errorMsg);
+        }
+
+        return this.sendRequest(url, payloadObject.toString(), SimpleClient.POST, additionalHeaders);
     }
 
     /*
@@ -209,11 +245,11 @@ public class FiwareContextClient extends SimpleClient {
      * @param attributes The list of attributes do be monitored
      * @return           The information of the subscription
      */
-    public void subscribeCygnus(String entityId, String attributes) {
+    public String subscribeCygnus(String entityId, List<String> attributes) {
 //        logging.info("Subscribing Cygnus")
-//
-//        notification_url = "http://{}:{}/notify".format(self.cygnus_notification_host, self.cygnus_port)
-//        return self.subscribe_attributes_change(entity_id, attributes, notification_url)
+
+        String notificationUrl = String.format("http://%s:%s/notify", cygnusNotificationHost, cygnusPort);
+        return this.subscribeAttributesChange(entityId, attributes, notificationUrl);
     }
 
     /*
@@ -223,11 +259,11 @@ public class FiwareContextClient extends SimpleClient {
      * @param attributes  The list of attributes do be monitored
      * @return            The information of the subscription
      */
-    public void subscribeHistoricalData(String entityId, String attributes) {
+    public String subscribeHistoricalData(String entityId, List<String> attributes) {
 //        logging.info("Subscribing to historical data")
-//
-//        notification_url = "http://{}:{}/notify".format(self.sth_host, self.sth_port)
-//        return self.subscribe_attributes_change(entity_id, attributes, notification_url)
+
+        String notificationUrl = String.format("http://%s:%s/notify", sthHost, sthPort);
+        return this.subscribeAttributesChange(entityId, attributes, notificationUrl);
     }
 
     /*
@@ -240,20 +276,20 @@ public class FiwareContextClient extends SimpleClient {
      *                     If no value is provided, the default value (10 entries) will be used
      * @return             The historical data on the specified attribute of the given entity
      */
-    public void getHistoricalData(String entityType, String entityId, String attribute, int items_number) {
+    public String getHistoricalData(String entityType, String entityId, String attribute, int itemsNumber) {
 //        logging.info("Getting historical data")
-//
-//        url = "http://{}:{}/STH/v1/contextEntities" \
-//              "/type/{}/id/{}/attributes/{}?lastN={}".format(self.sth_host, self.sth_port, entity_type, entity_id,
-//                                                             attribute, items_number)
-//
-//        additional_headers = {'Accept': 'application/json',
-//                              'Fiware-Service': str(self.fiware_service).lower(),
-//                              'Fiware-ServicePath': str(self.fiware_service_path).lower()}
-//
-//        payload = ''
-//
-//        return self._send_request(url, payload, 'GET', additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/STH/v1/contextEntities/type/%s/id/%s/attributes/%s?lastN=%s",
+                        sthHost, sthPort, entityType, entityId, attribute, itemsNumber);
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Accept", "application/json");
+        additionalHeaders.put("Fiware-Service", getFiwareService().toLowerCase());
+        additionalHeaders.put("Fiware-ServicePath", getFiwareServicePath().toLowerCase());
+
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.GET, additionalHeaders);
     }
 
     /*
@@ -263,17 +299,18 @@ public class FiwareContextClient extends SimpleClient {
      * @return                True if the subscription with the given id was removed
      *                        False if no subscription with the given id was removed
      */
-    public void unsubscribe(String subscriptionId) {
+    public String unsubscribe(String subscriptionId) {
 //        logging.info("Removing subscriptions")
-//
-//        url = "http://{}:{}/v1/unsubscribeContext".format(self.cb_host, self.cb_port)
-//
-//        additional_headers = {'Accept': 'application/json',
-//                              'Content-Type': 'application/json'}
-//
-//        payload = {"subscriptionId": str(subscription_id)}
-//
-//        return self._send_request(url, payload, 'POST', additional_headers=additional_headers)
+
+        String url = String.format("http://%s:%s/v1/unsubscribeContext", getCbHost(), getCbPort());
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Accept", "application/json");
+        additionalHeaders.put("Content-Type", "application/json");
+
+        String payload = String.format("{\"subscriptionId\": \"%s\"}", subscriptionId);
+
+        return this.sendRequest(url, payload, SimpleClient.POST, additionalHeaders);
     }
 
     /*
@@ -282,14 +319,13 @@ public class FiwareContextClient extends SimpleClient {
      * @param subscriptionId  The id of the subscription to be searched
      * @return                The information of the subscription found with the given id or None if no subscription was found with the id
      */
-    public void getSubscriptionById(String subscriptionId) {
+    public String getSubscriptionById(String subscriptionId) {
 //        logging.info("Getting subscription by id '{}'".format(subscription_id))
-//
-//        url = "http://{}:{}/v2/subscriptions/{}".format(self.cb_host, self.cb_port, subscription_id)
-//
-//        payload = ''
-//
-//        return self._send_request(url, payload, 'GET')
+
+        String url = String.format("http://%s:%s/v2/subscriptions/%s", getCbHost(), getCbPort(), subscriptionId);
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.GET);
     }
 
     /*
@@ -297,14 +333,13 @@ public class FiwareContextClient extends SimpleClient {
      * 
      * @return  A list with the ids of all the subscriptions
      */
-    public void listSubscriptions() {
+    public String listSubscriptions() {
 //        logging.info("Listing subscriptions")
-//
-//        url = "http://{}:{}/v2/subscriptions".format(self.cb_host, self.cb_port)
-//
-//        payload = ''
-//
-//        return self._send_request(url, payload, 'GET')
+
+        String url = String.format("http://%s:%s/v2/subscriptions", getCbHost(), getCbPort());
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.GET);
     }
 
 	public String getSthHost() {
