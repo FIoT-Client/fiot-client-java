@@ -29,33 +29,33 @@ import org.json.JSONObject;
  */
 public class FiwareContextClient extends SimpleClient {
 
-	private String sthHost;
-	private String sthPort;
-	
-	private String cygnusHost;
-	private String cygnusNotificationHost;
-	private String cygnusPort;
-	
-	private String perseoHost;
-	private String perseoPort;
+    private String sthHost;
+    private String sthPort;
 
-	/* 
-	 * @param configFile  The file in which load the default configuration
-	 */
+    private String cygnusHost;
+    private String cygnusNotificationHost;
+    private String cygnusPort;
+
+    private String perseoHost;
+    private String perseoPort;
+
+    /*
+     * @param configFile  The file in which load the default configuration
+     */
     public FiwareContextClient(String configFile) throws InvalidFileFormatException, IOException {
         super(configFile);
         
         Map<String, String> configMap = ConfigParser.readConfigFile(configFile);
         
-		this.sthHost = configMap.get("sth_host");
-		this.sthPort = configMap.get("sth_port");
-		
-		this.cygnusHost = configMap.get("cygnus_host");
-		this.cygnusNotificationHost = configMap.get("cygnus_notification_host");
-		this.cygnusPort = configMap.get("cygnus_port");
+        this.sthHost = configMap.get("sth_host");
+        this.sthPort = configMap.get("sth_port");
 
-		this.perseoHost = configMap.get("perseo_host");
-		this.perseoPort = configMap.get("perseo_port");
+        this.cygnusHost = configMap.get("cygnus_host");
+        this.cygnusNotificationHost = configMap.get("cygnus_notification_host");
+        this.cygnusPort = configMap.get("cygnus_port");
+
+        this.perseoHost = configMap.get("perseo_host");
+        this.perseoPort = configMap.get("perseo_port");
     }
 
     /*
@@ -77,7 +77,7 @@ public class FiwareContextClient extends SimpleClient {
      * @return              Information of the updated entity
      */
     public void updateEntity(String entityId, String entitySchema) {
-    		//TODO Implement
+            //TODO Implement
     }
 
     /*
@@ -87,7 +87,7 @@ public class FiwareContextClient extends SimpleClient {
      * @return          Information of the removed entity
      */
     public void removeEntity(String entityId) {
-    		//TODO Implement
+            //TODO Implement
     }
 
     /*
@@ -146,7 +146,7 @@ public class FiwareContextClient extends SimpleClient {
         attributesStr = String.format("[%s]", attributesStr);
 
         String payload = String.format(
-        		            "{" +
+                            "{" +
                                 "\"entities\": [" +
                                     "{" +
                                         "\"type\": \"thing\"," +
@@ -157,7 +157,7 @@ public class FiwareContextClient extends SimpleClient {
                                 "\"attributes\": \"%s\"," +
                                 "\"notifyConditions\": [" +
                                     "{" +
-              	                        "\"type\": \"ONCHANGE\"," +
+                                        "\"type\": \"ONCHANGE\"," +
                                         "\"condValues\": \"%s\"" +
                                     "}" +
                                 "]," +
@@ -342,60 +342,60 @@ public class FiwareContextClient extends SimpleClient {
         return this.sendRequest(url, payload, SimpleClient.GET);
     }
 
-	public String getSthHost() {
-		return sthHost;
-	}
+    public String getSthHost() {
+        return sthHost;
+    }
 
-	public void setSthHost(String sthHost) {
-		this.sthHost = sthHost;
-	}
+    public void setSthHost(String sthHost) {
+        this.sthHost = sthHost;
+    }
 
-	public String getSthPort() {
-		return sthPort;
-	}
+    public String getSthPort() {
+        return sthPort;
+    }
 
-	public void setSthPort(String sthPort) {
-		this.sthPort = sthPort;
-	}
+    public void setSthPort(String sthPort) {
+        this.sthPort = sthPort;
+    }
 
-	public String getCygnusHost() {
-		return cygnusHost;
-	}
+    public String getCygnusHost() {
+        return cygnusHost;
+    }
 
-	public void setCygnusHost(String cygnusHost) {
-		this.cygnusHost = cygnusHost;
-	}
+    public void setCygnusHost(String cygnusHost) {
+        this.cygnusHost = cygnusHost;
+    }
 
-	public String getCygnusNotificationHost() {
-		return cygnusNotificationHost;
-	}
+    public String getCygnusNotificationHost() {
+        return cygnusNotificationHost;
+    }
 
-	public void setCygnusNotificationHost(String cygnusNotificationHost) {
-		this.cygnusNotificationHost = cygnusNotificationHost;
-	}
+    public void setCygnusNotificationHost(String cygnusNotificationHost) {
+        this.cygnusNotificationHost = cygnusNotificationHost;
+    }
 
-	public String getCygnusPort() {
-		return cygnusPort;
-	}
+    public String getCygnusPort() {
+        return cygnusPort;
+    }
 
-	public void setCygnusPort(String cygnusPort) {
-		this.cygnusPort = cygnusPort;
-	}
+    public void setCygnusPort(String cygnusPort) {
+        this.cygnusPort = cygnusPort;
+    }
 
-	public String getPerseoHost() {
-		return perseoHost;
-	}
+    public String getPerseoHost() {
+        return perseoHost;
+    }
 
-	public void setPerseoHost(String perseoHost) {
-		this.perseoHost = perseoHost;
-	}
+    public void setPerseoHost(String perseoHost) {
+        this.perseoHost = perseoHost;
+    }
 
-	public String getPerseoPort() {
-		return perseoPort;
-	}
+    public String getPerseoPort() {
+        return perseoPort;
+    }
 
-	public void setPerseoPort(String perseoPort) {
-		this.perseoPort = perseoPort;
-	}
+    public void setPerseoPort(String perseoPort) {
+        this.perseoPort = perseoPort;
+    }
 
 }

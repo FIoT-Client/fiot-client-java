@@ -12,10 +12,10 @@ import br.ufrn.imd.fiotclient.context.FiwareContextClient;
 import br.ufrn.imd.fiotclient.iot.FiwareIotClient;
 
 public class MainTest {
-	
-	public static void main(String[] args) throws InvalidFileFormatException, IOException {
-		FiwareContextClient fiwareContextClient = new FiwareContextClient("config.ini");
-		FiwareIotClient fiwareIotClient = new FiwareIotClient("config.ini");
+
+    public static void main(String[] args) throws InvalidFileFormatException, IOException {
+        FiwareContextClient fiwareContextClient = new FiwareContextClient("config.ini");
+        FiwareIotClient fiwareIotClient = new FiwareIotClient("config.ini");
 
         fiwareIotClient.listDevices();
         System.out.println();
@@ -32,32 +32,32 @@ public class MainTest {
         fiwareIotClient.listDevices();
         System.out.println();
 
-		fiwareContextClient.getEntityById("RFID_READER_001");
+        fiwareContextClient.getEntityById("RFID_READER_001");
         System.out.println();
 
-		HashMap<String, String> measurementGroup = new HashMap<>();
-		measurementGroup.put("r", "1234ABCD5678EFGH");
-		fiwareIotClient.sendObservation("RFID_READER_001", measurementGroup, "MQTT");
+        HashMap<String, String> measurementGroup = new HashMap<>();
+        measurementGroup.put("r", "1234ABCD5678EFGH");
+        fiwareIotClient.sendObservation("RFID_READER_001", measurementGroup, "MQTT");
         System.out.println();
 
-		fiwareIotClient.sendCommand("GATE_001", "GATE_001", "change_state", Arrays.asList("OPEN"));
+        fiwareIotClient.sendCommand("GATE_001", "GATE_001", "change_state", Arrays.asList("OPEN"));
         System.out.println();
 
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-		fiwareIotClient.sendCommand("GATE_001", "GATE_001", "change_state", Arrays.asList("CLOSED"));
+        fiwareIotClient.sendCommand("GATE_001", "GATE_001", "change_state", Arrays.asList("CLOSED"));
         System.out.println();
 
-		fiwareContextClient.getEntityById("RFID_READER_001");
+        fiwareContextClient.getEntityById("RFID_READER_001");
         System.out.println();
 
-		fiwareContextClient.listSubscriptions();
+        fiwareContextClient.listSubscriptions();
         System.out.println();
-	}
+    }
 
 }
