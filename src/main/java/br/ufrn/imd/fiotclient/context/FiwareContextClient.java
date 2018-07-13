@@ -1,6 +1,9 @@
 package br.ufrn.imd.fiotclient.context;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,13 +63,42 @@ public class FiwareContextClient extends SimpleClient {
 
     /*
      * Creates a new NGSI entity with the given structure in the currently selected service
-     * 
-     * @param entityId      The id to the entity to be created
+     *
      * @param entitySchema  JSON string representing entity schema
+     * @param entityId      The id to the entity to be created
      * @return              Information of the registered entity
      */
-    public void createEntity(String entityId, String entitySchema) {
-        //TODO Implement
+    public String createEntity(String entitySchema, String entityId) {
+        String url = String.format("http://%s:%s/v2/entities", this.getCbHost(), this.getCbPort());
+
+        Map<String, String> additionalHeaders = new HashMap<>();
+        additionalHeaders.put("Content-Type", "application/json");
+
+        //Tests if file content is a valid JSON (or throws JSONException)
+        new JSONObject(entitySchema);
+
+        String entitySchemaReplaced = entitySchema.replace("[ENTITY_ID]", entityId);
+
+        return this.sendRequest(url, entitySchemaReplaced, SimpleClient.POST, additionalHeaders);
+    }
+
+    /*
+     * Creates a new NGSI entity loading its structure from a given file
+     *
+     * @param entityFilePath  The path to the description file for the entity
+     * @param entityId        The id to the entity to be created
+     * @return                Information of the registered entity
+     */
+    public String createEntityFromFile(String entityFilePath, String entityId) throws IOException {
+        // logging.info("Opening file '{}'".format(entity_file_path))
+
+        byte[] jsonEntityFileBytes = Files.readAllBytes(Paths.get(entityFilePath));
+        String entitySchemaJsonStr = new String(jsonEntityFileBytes, Charset.defaultCharset());
+
+        //Tests if file content is a valid JSON (or throws JSONException)
+        new JSONObject(entitySchemaJsonStr);
+
+        return this.createEntity(entitySchemaJsonStr, entityId);
     }
 
     /*
@@ -77,36 +109,40 @@ public class FiwareContextClient extends SimpleClient {
      * @return              Information of the updated entity
      */
     public void updateEntity(String entityId, String entitySchema) {
-            //TODO Implement
+        //TODO Implement
     }
 
     /*
      * Removes an entity with the given id
      * 
-     * @param entityId  The id to the entity to be removed
-     * @return          Information of the removed entity
+     * @param entityId    The id to the entity to be removed
+     * @param entityType  The type of the entity to be removed
+     * @return            Information of the removed entity
      */
-    public void removeEntity(String entityId) {
-            //TODO Implement
+    public String removeEntity(String entityId, String entityType) {
+//        logging.info("Removing entity with id '{}'".format(entity_id))
+
+        String url = String.format("http://%s:%s/v2/entities/%s?type=%s", this.getCbHost(), this.getCbPort(), entityId, entityType);
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.DELETE);
     }
 
     /*
      * Get entity information given its entity id
      * 
-     * @param entityId  The id of the entity to be searched
-     * @return          The information of the entity found with the given id or None if no entity was found with the id
+     * @param entityId    The id of the entity to be searched
+     * @param entityType  The type of the entity to be searched
+     * @return            The information of the entity found with the given id or None if no entity was found with the id
      */
-    public String getEntityById(String entityId) {
+    public String getEntityById(String entityId, String entityType) {
 //        logging.info("Getting entity by id '{}'".format(entity_id))
-        
-        //TODO Remove hardcoded type from url
-        String url = String.format("http://%s:%s/v2/entities/%s/attrs?type=thing", this.getCbHost(), this.getCbPort(), entityId);
+
+        String url = String.format("http://%s:%s/v2/entities/%s?type=%s", this.getCbHost(), this.getCbPort(), entityId, entityType);
         String payload = "";
 
         return this.sendRequest(url, payload, SimpleClient.GET);
     }
-
-    //TODO Implement get all entities of all types of selected service
 
     /*
      * Get entities created with a given entity type
@@ -118,6 +154,20 @@ public class FiwareContextClient extends SimpleClient {
 //        logging.info("Getting entities by type '{}'".format(type))
 
         String url = String.format("http://%s:%s/v2/entities?type=%s", getCbHost(), getCbPort(), entityType);
+        String payload = "";
+
+        return this.sendRequest(url, payload, SimpleClient.GET);
+    }
+
+    /*
+     * Get all created entities
+     *
+     * @return  A list with the information of all the created entities
+     */
+    public String getEntities() {
+//        logging.info("Getting all entities")
+
+        String url = String.format("http://%s:%s/v2/entities", getCbHost(), getCbPort());
         String payload = "";
 
         return this.sendRequest(url, payload, SimpleClient.GET);

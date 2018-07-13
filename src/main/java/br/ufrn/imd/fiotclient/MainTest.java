@@ -32,7 +32,7 @@ public class MainTest {
         fiwareIotClient.listDevices();
         System.out.println();
 
-        fiwareContextClient.getEntityById("RFID_READER_001");
+        fiwareContextClient.getEntityById("RFID_READER_001", "thing");
         System.out.println();
 
         HashMap<String, String> measurementGroup = new HashMap<>();
@@ -53,10 +53,31 @@ public class MainTest {
         fiwareIotClient.sendCommand("GATE_001", "GATE_001", "change_state", Arrays.asList("CLOSED"));
         System.out.println();
 
-        fiwareContextClient.getEntityById("RFID_READER_001");
+        fiwareContextClient.getEntityById("RFID_READER_001", "thing");
         System.out.println();
 
         fiwareContextClient.listSubscriptions();
+        System.out.println();
+
+        fiwareContextClient.getEntitiesByType("thing");
+        System.out.println();
+
+        fiwareContextClient.getEntitiesByType("Room");
+        System.out.println();
+
+        fiwareContextClient.createEntityFromFile("ROOM.json","ROOM_001");
+        System.out.println();
+
+        fiwareContextClient.getEntitiesByType("Room");
+        System.out.println();
+
+        fiwareContextClient.removeEntity("ROOM_001", "Room");
+        System.out.println();
+
+        fiwareContextClient.getEntitiesByType("Room");
+        System.out.println();
+
+        fiwareContextClient.getEntities();
         System.out.println();
     }
 

@@ -27,7 +27,7 @@ import br.ufrn.imd.fiotclient.utils.ConfigParser;
  * 
  */
 public class SimpleClient {
-    
+
     private String fiwareService;
     private String fiwareServicePath;
 
@@ -80,27 +80,32 @@ public class SimpleClient {
         if (SUPPORTED_HTTP_METHODS.contains(method)) {
             JSONObject resultJSON = new JSONObject();
             try {
-                System.out.print("Asking to:");
+                System.out.print("Asking to: ");
                 System.out.println(url);
 
                 HttpClient client = HttpClientBuilder.create().build();
                 HttpUriRequest request;
 
-                System.out.print("Method:");
-                if (method.equals(SimpleClient.GET)) {
-                    System.out.println("GET");
-                    request = new HttpGet(url);
-                } else if (method.equals(SimpleClient.POST)) {
-                    System.out.println("POST");
-                    request = new HttpPost(url);
-                    ((HttpPost) request).setEntity(new StringEntity(payload));
-                } else if (method.equals(SimpleClient.PUT)) {
-                    System.out.println("PUT");
-                    request = new HttpPut(url);
-                    ((HttpPut) request).setEntity(new StringEntity(payload));
-                } else { //if (method.equals(SimpleClient.DELETE)) {
-                    System.out.println("DELETE");
-                    request = new HttpDelete(url);
+                System.out.print("Method: ");
+                switch (method) {
+                    case SimpleClient.POST:
+                        System.out.println("POST");
+                        request = new HttpPost(url);
+                        ((HttpPost) request).setEntity(new StringEntity(payload));
+                        break;
+                    case SimpleClient.PUT:
+                        System.out.println("PUT");
+                        request = new HttpPut(url);
+                        ((HttpPut) request).setEntity(new StringEntity(payload));
+                        break;
+                    case SimpleClient.DELETE:
+                        System.out.println("DELETE");
+                        request = new HttpDelete(url);
+                        break;
+                    default: //case SimpleClient.GET:
+                        System.out.println("GET");
+                        request = new HttpGet(url);
+                        break;
                 }
 
                 if(!payload.equals("")) {
@@ -113,11 +118,10 @@ public class SimpleClient {
                 request.addHeader("Fiware-ServicePath", this.getFiwareServicePath());
 
                 if(additionalHeaders.size() > 0) {
-                    additionalHeaders.forEach((k, v) -> request.addHeader(k, v));
+                    additionalHeaders.forEach(request::addHeader);
                 }
 
-                System.out.println(String.format("Asking to {}", url));
-                System.out.print("Headers:");
+                System.out.print("Headers: ");
                 System.out.println(request.getAllHeaders().toString());
 
                 //TODO Adds timeout or verifications of servers on calls to APIs
@@ -125,7 +129,7 @@ public class SimpleClient {
                 HttpResponse response = client.execute(request);
 
                 int statusCode = response.getStatusLine().getStatusCode();
-                System.out.println(String.format("Status Code: {}", statusCode));
+                System.out.println(String.format("Status Code: %s", statusCode));
 
                 BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 
@@ -149,10 +153,10 @@ public class SimpleClient {
             }
         } else {
             //logging.error("Unsupported method '{}'".format(str(method)))
-                String errorMsg = String.format("Unsupported method '{}'. Select one of 'GET', 'POST', 'PUT' and 'DELETE'", method);
-                JSONObject resultJSON = new JSONObject();
-                resultJSON.put("error", errorMsg);
-                return resultJSON.toString();
+            String errorMsg = String.format("Unsupported method '%s'. Select one of 'GET', 'POST', 'PUT' and 'DELETE'", method);
+            JSONObject resultJSON = new JSONObject();
+            resultJSON.put("error", errorMsg);
+            return resultJSON.toString();
         }
     }
 
