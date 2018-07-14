@@ -1,11 +1,7 @@
 package br.ufrn.imd.fiotclient.iot;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-
+import br.ufrn.imd.fiotclient.SimpleClient;
+import br.ufrn.imd.fiotclient.utils.ConfigParser;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -13,8 +9,11 @@ import org.ini4j.InvalidFileFormatException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import br.ufrn.imd.fiotclient.SimpleClient;
-import br.ufrn.imd.fiotclient.utils.ConfigParser;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 
 //import logging
 

@@ -1,19 +1,15 @@
 package br.ufrn.imd.fiotclient;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-
-import jdk.nashorn.internal.runtime.JSONListAdapter;
-import org.ini4j.InvalidFileFormatException;
-
 import br.ufrn.imd.fiotclient.context.FiwareContextClient;
 import br.ufrn.imd.fiotclient.iot.FiwareIotClient;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+
 public class MainTest {
 
-    public static void main(String[] args) throws InvalidFileFormatException, IOException {
+    public static void main(String[] args) throws IOException {
         FiwareContextClient fiwareContextClient = new FiwareContextClient("config.ini");
         FiwareIotClient fiwareIotClient = new FiwareIotClient("config.ini");
 

@@ -1,5 +1,10 @@
 package br.ufrn.imd.fiotclient.context;
 
+import br.ufrn.imd.fiotclient.SimpleClient;
+import br.ufrn.imd.fiotclient.utils.ConfigParser;
+import org.ini4j.InvalidFileFormatException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -8,12 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.ini4j.InvalidFileFormatException;
-
-import br.ufrn.imd.fiotclient.SimpleClient;
-import br.ufrn.imd.fiotclient.utils.ConfigParser;
-import org.json.JSONObject;
 
 //import logging
 
