@@ -25,8 +25,8 @@ Add the Maven dependency listed above in your pom.xml dependencies file:
 ```
 <dependency>
     <groupId>br.ufrn.imd</groupId>
-	<artifactId>fiotclient</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+    <artifactId>fiotclient</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
