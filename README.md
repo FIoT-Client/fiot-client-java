@@ -20,13 +20,20 @@ Give examples
 
 ### Installing
 
-Add the Maven dependency listed above in your pom.xml dependencies file:
+To install the library locally, after cloning the repo, install the package locally:
+```
+$ mvn install
+```
+
+Otherwise, if you prefer using the dependency from the [Maven repository](https://mvnrepository.com/artifact/br.ufrn.imd/fiot-client).
+
+After that, in both cases, add the Maven dependency listed above in your pom.xml dependencies file:
 
 ```
 <dependency>
     <groupId>br.ufrn.imd</groupId>
     <artifactId>fiotclient</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
 </dependency>
 ```
 

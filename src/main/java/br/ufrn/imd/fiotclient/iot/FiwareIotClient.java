@@ -5,7 +5,6 @@ import br.ufrn.imd.fiotclient.utils.ConfigParser;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.ini4j.InvalidFileFormatException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,34 +25,34 @@ import java.util.*;
 //__status__ = "Development"
 
 /*
- * Client for doing IoT management operations on FIWARE platform
+ * Client for IoT management operations on FIWARE platform
  * 
  * @author Lucas Cristiano Calixto Dantas
  */
 public class FiwareIotClient extends SimpleClient {
 
-    private String idasHost;
-    private String idasAdminPort;
-    private String idasUL20Port;
-    private String apiKey;
-    private String mosquittoHost;
-    private String mosquittoPort;
+    private String iotaHost;
+    private String iotaNorthPort;
+    private String iotaProtocolPort;
+    private String iotaApiKey;
+    private String mqttBrokerHost;
+    private String mqttBrokerPort;
 
     /*
      * @param configFile  The file in which load the default configuration
      */
-    public FiwareIotClient(String configFile) throws InvalidFileFormatException, IOException {
+    public FiwareIotClient(String configFile) throws IOException {
         super(configFile);
 
         Map<String, String> configMap = ConfigParser.readConfigFile(configFile);
 
-        this.idasHost = configMap.get("idas_host");
-        this.idasAdminPort = configMap.get("idas_admin_port");
-        this.idasUL20Port = configMap.get("idas_ul20_port");
-        this.apiKey = configMap.get("api_key");
+        this.iotaHost = configMap.get("iota_host");
+        this.iotaNorthPort = configMap.get("iota_north_port");
+        this.iotaProtocolPort = configMap.get("iota_protocol_port");
+        this.iotaApiKey = configMap.get("iota_api_key");
 
-        this.mosquittoHost = configMap.get("mosquitto_host");
-        this.mosquittoPort = configMap.get("mosquitto_port");
+        this.mqttBrokerHost = configMap.get("mqtt_broker_host");
+        this.mqttBrokerPort = configMap.get("mqtt_broker_port");
     }
 
     /*
@@ -61,7 +60,7 @@ public class FiwareIotClient extends SimpleClient {
      *
      * @return  The generated api key string
      */
-    public static String generateApiKey() {
+    private static String generateApiKey() {
         UUID uuid = UUID.randomUUID();
         return uuid.toString();
     }
@@ -71,7 +70,7 @@ public class FiwareIotClient extends SimpleClient {
      *
      * @param service      The name of the service to be created
      * @param servicePath  The service path of the service to be created
-     * @param apiKey       A specific api key to use to create the service. If no api key is provided, a random one will be generated.
+     * @param iotaApiKey       A specific api key to use to create the service. If no api key is provided, a random one will be generated.
      * @return             The information of the created service
      */
     public String createService(String service, String servicePath, String apiKey) {
@@ -105,11 +104,11 @@ public class FiwareIotClient extends SimpleClient {
      *
      * @param service      The name of the service to be created
      * @param servicePath  The service path of the service to be created
-     * @param apiKey       The api key to use to create the service
+     * @param iotaApiKey       The api key to use to create the service
      * @return             The response of the creation request
      */
     private String createServiceAux(String service, String servicePath, String apiKey) {
-        String url = String.format("http://%s:%s/iot/services", this.idasHost, this.idasAdminPort);
+        String url = String.format("http://%s:%s/iot/services", this.iotaHost, this.iotaNorthPort);
 
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
@@ -135,7 +134,7 @@ public class FiwareIotClient extends SimpleClient {
     }
 
     /*
-     * Remove a subservice into a service. If Fiware-ServicePath is '/\*' or '/#' remove service and all its sub-services.
+     * Remove a sub-service into a service. If Fiware-ServicePath is '/\*' or '/#' remove service and all its sub-services.
      *
      * @param service        The name of the service to be removed
      * @param servicePath    The service path of the service to be removed
@@ -148,7 +147,7 @@ public class FiwareIotClient extends SimpleClient {
     public String removeService(String service, String servicePath, String apiKey, boolean removeDevices) {
         // logging.info("Removing service")
 
-        String url = String.format("http://%s:%s/iot/services?resource=%s&apikey=%s", idasHost, idasAdminPort, "/iot/d", apiKey);
+        String url = String.format("http://%s:%s/iot/services?resource=%s&apikey=%s", iotaHost, iotaNorthPort, "/iot/d", apiKey);
 
         if (!servicePath.equals("/*") && !servicePath.equals("/#")) {
             String removeDevicesStr = removeDevices? "true" : "false";
@@ -165,15 +164,6 @@ public class FiwareIotClient extends SimpleClient {
     }
 
     /*
-     * Get all registered services
-     *
-     * @return  A list with the registered services
-     */
-    public void listServices() {
-        // TODO Implement
-    }
-
-    /*
      * Register a new device with the given structure in the currently selected service
      *
      * @param deviceSchema  JSON string representing device schema
@@ -186,7 +176,7 @@ public class FiwareIotClient extends SimpleClient {
     public String registerDevice(String deviceSchema, String deviceId, String entityId, String endpoint, String protocol) throws JSONException {
         // logging.info("Registering device")
 
-        String url = String.format("http://%s:%s/iot/devices?protocol=%s", idasHost, idasAdminPort, protocol);
+        String url = String.format("http://%s:%s/iot/devices?protocol=%s", iotaHost, iotaNorthPort, protocol);
 
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
@@ -252,7 +242,7 @@ public class FiwareIotClient extends SimpleClient {
      * @return          Response of the removal request
      */
     public String removeDevice(String deviceId) {
-        String url = String.format("http://%s:%s/iot/devices/%s", idasHost, idasAdminPort, deviceId);
+        String url = String.format("http://%s:%s/iot/devices/%s", iotaHost, iotaNorthPort, deviceId);
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
         String payload = "";
@@ -278,7 +268,7 @@ public class FiwareIotClient extends SimpleClient {
     public String listDevices() {
         // logging.info("Listing devices")
 
-        String url = String.format("http://%s:%s/iot/devices", idasHost, idasAdminPort);
+        String url = String.format("http://%s:%s/iot/devices", iotaHost, iotaNorthPort);
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
         String payload = "";
@@ -342,9 +332,9 @@ public class FiwareIotClient extends SimpleClient {
         switch (protocol) {
             case "MQTT":
                 System.out.println("Transport protocol: MQTT");
-                String topic = String.format("/%s/%s/attrs", this.apiKey, deviceId);
+                String topic = String.format("/%s/%s/attrs", this.iotaApiKey, deviceId);
 
-                System.out.println(String.format("Publishing to %s on topic %s", this.idasHost, topic));
+                System.out.println(String.format("Publishing to %s on topic %s", this.iotaHost, topic));
                 System.out.print("Sending payload: ");
                 System.out.println(payload);
 
@@ -359,7 +349,7 @@ public class FiwareIotClient extends SimpleClient {
 
             case "HTTP":
                 System.out.println("Transport protocol: UL-HTTP");
-                String url = String.format("http://%s:%s/iot/d?k=%s&i=%s", this.idasHost, this.idasUL20Port, this.apiKey, deviceId);
+                String url = String.format("http://%s:%s/iot/d?k=%s&i=%s", this.iotaHost, this.iotaProtocolPort, this.iotaApiKey, deviceId);
 
                 Map<String, String> additional_headers = new HashMap<>();
                 additional_headers.put("Content-Type", "text/plain");
@@ -379,7 +369,7 @@ public class FiwareIotClient extends SimpleClient {
     }
 
     private void publishMQTTMessage(String topic, String payload) throws MqttException {
-        MqttClient client = new MqttClient(String.format("tcp://%s:%s", this.mosquittoHost, this.mosquittoPort), MqttClient.generateClientId());
+        MqttClient client = new MqttClient(String.format("tcp://%s:%s", this.mqttBrokerHost, this.mqttBrokerPort), MqttClient.generateClientId());
         client.connect();
 
         MqttMessage message = new MqttMessage();
@@ -417,7 +407,7 @@ public class FiwareIotClient extends SimpleClient {
                 params = new ArrayList<String>();
         }
 
-        String url = String.format("http://%s:%s/v1/updateContext", this.idasHost, this.idasAdminPort);
+        String url = String.format("http://%s:%s/v1/updateContext", this.iotaHost, this.iotaNorthPort);
 
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
@@ -459,7 +449,7 @@ public class FiwareIotClient extends SimpleClient {
     public String getPollingCommands(String deviceId, List<Map<String, String>> measurementGroups) {
         // logging.info("Sending measurement and getting pooling commands")
 
-        String url = String.format("http://%s:%s/iot/d?k=%s&i=%s&getCmd=1", idasHost, idasUL20Port, apiKey, deviceId);
+        String url = String.format("http://%s:%s/iot/d?k=%s&i=%s&getCmd=1", iotaHost, iotaProtocolPort, iotaApiKey, deviceId);
         String payload = createULPayloadFromMeasurementGroupList(measurementGroups);
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "text/plain");
@@ -478,57 +468,57 @@ public class FiwareIotClient extends SimpleClient {
         return this.getPollingCommands(deviceId, Collections.singletonList(measurements));
     }
 
-    public String getIdasHost() {
-        return idasHost;
+    public String getIotaHost() {
+        return iotaHost;
     }
 
-    public void setIdasHost(String idasHost) {
-        this.idasHost = idasHost;
+    public void setIotaHost(String iotaHost) {
+        this.iotaHost = iotaHost;
     }
 
-    public String getIdasAdminPort() {
-        return idasAdminPort;
+    public String getIotaNorthPort() {
+        return iotaNorthPort;
     }
 
-    public void setIdasAdminPort(String idasAdminPort) {
-        this.idasAdminPort = idasAdminPort;
+    public void setIotaNorthPort(String iotaNorthPort) {
+        this.iotaNorthPort = iotaNorthPort;
     }
 
-    public String getIdasUL20Port() {
-        return idasUL20Port;
+    public String getIotaProtocolPort() {
+        return iotaProtocolPort;
     }
 
-    public void setIdasUL20Port(String idasUL20Port) {
-        this.idasUL20Port = idasUL20Port;
+    public void setIotaProtocolPort(String iotaProtocolPort) {
+        this.iotaProtocolPort = iotaProtocolPort;
     }
 
-    public String getMosquittoHost() {
-        return mosquittoHost;
+    public String getMqttBrokerHost() {
+        return mqttBrokerHost;
     }
 
-    public void setMosquittoHost(String mosquittoHost) {
-        this.mosquittoHost = mosquittoHost;
+    public void setMqttBrokerHost(String mqttBrokerHost) {
+        this.mqttBrokerHost = mqttBrokerHost;
     }
 
-    public String getMosquittoPort() {
-        return mosquittoPort;
+    public String getMqttBrokerPort() {
+        return mqttBrokerPort;
     }
 
-    public void setMosquittoPort(String mosquittoPort) {
-        this.mosquittoPort = mosquittoPort;
+    public void setMqttBrokerPort(String mqttBrokerPort) {
+        this.mqttBrokerPort = mqttBrokerPort;
     }
 
-    public String getApiKey() {
-        return apiKey;
+    public String getIotaApiKey() {
+        return iotaApiKey;
     }
 
     /*
      * Sets the api key to use to send measurements from device
      *
-     * @param apiKey  The api key of the service to use
+     * @param iotaApiKey  The api key of the service to use
      */
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+    public void setIotaApiKey(String iotaApiKey) {
+        this.iotaApiKey = iotaApiKey;
     }
 
 }

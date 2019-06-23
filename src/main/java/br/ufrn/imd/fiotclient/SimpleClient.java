@@ -6,7 +6,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.ini4j.InvalidFileFormatException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -23,6 +22,13 @@ import java.util.Map;
  */
 public class SimpleClient {
 
+    public static final String GET    = "GET";
+    public static final String POST   = "POST";
+    public static final String PUT    = "PUT";
+    public static final String DELETE = "DELETE";
+
+    private static final List<String> SUPPORTED_HTTP_METHODS = Arrays.asList(GET, POST, PUT, DELETE);
+
     private String fiwareService;
     private String fiwareServicePath;
 
@@ -35,26 +41,19 @@ public class SimpleClient {
 
     private String hostId;
 
-    public static final String GET    = "GET";
-    public static final String POST   = "POST";
-    public static final String PUT    = "PUT";
-    public static final String DELETE = "DELETE";
-
-    private static final List<String> SUPPORTED_HTTP_METHODS = Arrays.asList(GET, POST, PUT, DELETE);
-
     /*
      * @param configFile  The file in which load the default configuration
      */
-    public SimpleClient(String configFile) throws InvalidFileFormatException, IOException {
+    public SimpleClient(String configFile) throws IOException {
         Map<String, String> configMap = ConfigParser.readConfigFile(configFile);
 
         this.fiwareService = configMap.get("fiware_service");
         this.fiwareServicePath = configMap.get("fiware_service_path");
 
-        this.cbHost = configMap.get("cb_host");
-        this.cbPort = configMap.get("cb_port");
+        this.cbHost = configMap.get("context_broker_host");
+        this.cbPort = configMap.get("context_broker_port");
 
-        this.idasAAA = configMap.get("idas_aaa");
+        this.idasAAA = configMap.get("iota_aaa");
 
         this.token = configMap.get("token");
         this.expiresAt = ""; //TODO Change
@@ -116,8 +115,8 @@ public class SimpleClient {
                     additionalHeaders.forEach(request::addHeader);
                 }
 
-                System.out.print("Headers: ");
-                System.out.println(request.getAllHeaders().toString());
+                System.out.println("Headers: ");
+                Arrays.stream(request.getAllHeaders()).forEach(System.out::println);
 
                 //TODO Adds timeout or verifications of servers on calls to APIs
 
@@ -129,7 +128,7 @@ public class SimpleClient {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 
                 StringBuffer result = new StringBuffer();
-                String line = "";
+                String line;
                 while ((line = rd.readLine()) != null) {
                     result.append(line);
                 }

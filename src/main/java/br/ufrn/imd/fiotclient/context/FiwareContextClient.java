@@ -1,8 +1,8 @@
 package br.ufrn.imd.fiotclient.context;
 
 import br.ufrn.imd.fiotclient.SimpleClient;
+import br.ufrn.imd.fiotclient.context.model.EntityAttribute;
 import br.ufrn.imd.fiotclient.utils.ConfigParser;
-import org.ini4j.InvalidFileFormatException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -25,18 +25,18 @@ import java.util.stream.Collectors;
 //__status__ = "Development"
 
 /*
- * Client for doing context management operations on FIWARE platform
+ * Client for context management operations on FIWARE platform
  * 
  * @author Lucas Cristiano Calixto Dantas
  */
 public class FiwareContextClient extends SimpleClient {
 
+    private String cygnusHost;
+    private String cygnusPort;
+    private String cygnusNotificationHost;
+
     private String sthHost;
     private String sthPort;
-
-    private String cygnusHost;
-    private String cygnusNotificationHost;
-    private String cygnusPort;
 
     private String perseoHost;
     private String perseoPort;
@@ -44,17 +44,17 @@ public class FiwareContextClient extends SimpleClient {
     /*
      * @param configFile  The file in which load the default configuration
      */
-    public FiwareContextClient(String configFile) throws InvalidFileFormatException, IOException {
+    public FiwareContextClient(String configFile) throws IOException {
         super(configFile);
         
         Map<String, String> configMap = ConfigParser.readConfigFile(configFile);
-        
-        this.sthHost = configMap.get("sth_host");
-        this.sthPort = configMap.get("sth_port");
 
         this.cygnusHost = configMap.get("cygnus_host");
-        this.cygnusNotificationHost = configMap.get("cygnus_notification_host");
         this.cygnusPort = configMap.get("cygnus_port");
+        this.cygnusNotificationHost = configMap.get("cygnus_notification_host");
+
+        this.sthHost = configMap.get("sth_host");
+        this.sthPort = configMap.get("sth_port");
 
         this.perseoHost = configMap.get("perseo_host");
         this.perseoPort = configMap.get("perseo_port");
@@ -64,21 +64,15 @@ public class FiwareContextClient extends SimpleClient {
      * Creates a new NGSI entity with the given structure in the currently selected service
      *
      * @param entitySchema  JSON string representing entity schema
-     * @param entityId      The id to the entity to be created
      * @return              Information of the registered entity
      */
-    public String createEntity(String entitySchema, String entityId) {
+    public String createEntityFromSchema(String entitySchema) {
         String url = String.format("http://%s:%s/v2/entities", this.getCbHost(), this.getCbPort());
 
         Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("Content-Type", "application/json");
 
-        //Tests if file content is a valid JSON (or throws JSONException)
-        new JSONObject(entitySchema);
-
-        String entitySchemaReplaced = entitySchema.replace("[ENTITY_ID]", entityId);
-
-        return this.sendRequest(url, entitySchemaReplaced, SimpleClient.POST, additionalHeaders);
+        return this.sendRequest(url, entitySchema, SimpleClient.POST, additionalHeaders);
     }
 
     /*
@@ -88,16 +82,38 @@ public class FiwareContextClient extends SimpleClient {
      * @param entityId        The id to the entity to be created
      * @return                Information of the registered entity
      */
-    public String createEntityFromFile(String entityFilePath, String entityId) throws IOException {
+    public String createEntityFromFile(String entityFilePath) throws IOException {
         // logging.info("Opening file '{}'".format(entity_file_path))
 
         byte[] jsonEntityFileBytes = Files.readAllBytes(Paths.get(entityFilePath));
         String entitySchemaJsonStr = new String(jsonEntityFileBytes, Charset.defaultCharset());
 
-        //Tests if file content is a valid JSON (or throws JSONException)
-        new JSONObject(entitySchemaJsonStr);
+        return this.createEntityFromSchema(entitySchemaJsonStr);
+    }
 
-        return this.createEntity(entitySchemaJsonStr, entityId);
+    /*
+     * Creates a new NGSI entity with the given entity information in the currently selected service
+     *
+     * @param entityId      The id to the entity to be created
+     * @param entityIType   The type to the entity to be created
+     * @param attributes    List of EntityAttribute objects of the entity
+     * @return              Information of the registered entity
+     */
+    public String createEntity(String entityId, String entityType, List<EntityAttribute> attributes) {
+        JSONObject entityJsonObject = new JSONObject();
+
+        entityJsonObject.put("id", entityId);
+        entityJsonObject.put("type", entityType);
+
+        attributes.forEach(attribute -> {
+            JSONObject attrJson = new JSONObject();
+            attrJson.put("type", attribute.getType());
+            attrJson.put("value", attribute.getValue());
+
+            entityJsonObject.put(attribute.getName(), attrJson);
+        });
+
+        return this.createEntityFromSchema(entityJsonObject.toString());
     }
 
     /*

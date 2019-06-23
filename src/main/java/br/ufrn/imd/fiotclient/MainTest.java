@@ -61,7 +61,7 @@ public class MainTest {
         fiwareContextClient.getEntitiesByType("Room");
         System.out.println();
 
-        fiwareContextClient.createEntityFromFile("ROOM.json","ROOM_001");
+        fiwareContextClient.createEntityFromFile("ROOM.json");
         System.out.println();
 
         fiwareContextClient.getEntitiesByType("Room");
